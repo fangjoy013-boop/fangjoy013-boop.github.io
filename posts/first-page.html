@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="一篇 HTML 和 CSS 入门示例笔记：认识网页结构、连接样式文件，并在浏览器中查看第一个页面。">
+  <title>用 HTML 和 CSS 写一个页面 · Joy 的博客</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <header class="site-header wrap">
+    <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true">J.</span> Joy 的博客<span class="brand-label">/ 技术笔记</span></a>
+    <nav aria-label="主导航"><a href="../index.html#notes">笔记</a><a href="../index.html#about">关于</a></nav>
+  </header>
+  <main id="main" class="article-wrap">
+    <a class="back-link" href="../index.html#notes">← 返回笔记列表</a>
+    <article>
+      <header class="article-header">
+        <div class="note-meta"><span>入门记录</span><span class="sample">示例文章</span></div>
+        <h1>第一篇笔记：<br>用 HTML 和 CSS 写一个页面</h1>
+        <p class="article-subtitle">从结构到样式，认识一个网页如何组成。</p>
+        <div class="tags"><span>HTML</span><span>CSS</span><span>约 3 分钟阅读</span></div>
+      </header>
+      <div class="prose">
+        <p class="callout">这是一篇用于展示博客排版的示例笔记。你可以直接改写，也可以复制它，开始记录自己的学习过程。</p>
+        <h2>01 / 先准备两个文件</h2>
+        <p>一个简单的网页可以从两个文件开始：<code>index.html</code> 存放内容和结构，<code>styles.css</code> 控制颜色、字号与布局。把它们放在同一个文件夹里，就能开始动手。</p>
+        <h2>02 / 用 HTML 组织内容</h2>
+        <p>标题使用 <code>h1</code>，段落使用 <code>p</code>。下面的例子包含了一个完整网页的基本结构：</p>
+        <pre><code>&lt;!doctype html&gt;
+&lt;html lang="zh-CN"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;title&gt;我的第一篇笔记&lt;/title&gt;
+  &lt;link rel="stylesheet" href="styles.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;main&gt;
+    &lt;h1&gt;你好，世界&lt;/h1&gt;
+    &lt;p&gt;这是我的第一个页面。&lt;/p&gt;
+  &lt;/main&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+        <p><code>link</code> 元素把样式文件连接到页面；<code>charset</code> 声明文字编码，让中文正常显示。</p>
+        <h2>03 / 用 CSS 留出阅读空间</h2>
+        <p>先处理文字和留白。限制内容宽度、增加行距，可以让长段落更容易阅读。把下面的内容保存到 <code>styles.css</code>：</p>
+        <pre><code>body {
+  margin: 0;
+  background: #f8f7f3;
+  color: #252a26;
+  font-family: system-ui, sans-serif;
+  line-height: 1.8;
+}
+
+main {
+  max-width: 720px;
+  margin: 64px auto;
+  padding: 0 24px;
+}
+
+h1 {
+  color: #315a46;
+}</code></pre>
+        <h2>04 / 打开、修改、刷新</h2>
+        <p>双击 <code>index.html</code>，浏览器会显示页面。修改文字或样式并保存，再回到浏览器刷新，就能看到变化。</p>
+        <ul><li>文字乱码：检查文件是否保存为 UTF-8。</li><li>样式没生效：检查文件名和 <code>href</code> 中的路径是否一致。</li><li>页面没变化：确认保存了文件，并刷新正确的浏览器标签页。</li></ul>
+        <hr>
+        <p>下一次练习：加一条链接，再调整浏览器窗口宽度，看看页面在小屏幕上如何排列。</p>
+      </div>
+    </article>
+    <a class="text-link article-end" href="../index.html#notes">← 回到所有笔记</a>
+  </main>
+  <footer class="site-footer wrap"><span>© Joy · 把学到的，变成自己的。</span><a href="#main">回到顶部 ↑</a></footer>
+</body>
+</html>
