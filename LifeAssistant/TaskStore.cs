@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,6 +15,14 @@ namespace LifeAssistant
         public string Title { get; set; }
         public bool Done { get; set; }
         public string CreatedAt { get; set; }
+        public string Category { get; set; }
+        public int Priority { get; set; }
+        public string DueDate { get; set; }
+        public string PriorityText { get { return Priority == 2 ? "高优先级" : Priority == 1 ? "普通" : "低优先级"; } }
+        public string PriorityColor { get { return Priority == 2 ? "#B64E45" : Priority == 1 ? "#477D69" : "#7B8792"; } }
+        public bool IsOverdue { get { return !Done && !String.IsNullOrEmpty(DueDate) && String.CompareOrdinal(DueDate, DateTime.Today.ToString("yyyy-MM-dd")) < 0; } }
+        public string DueText { get { return String.IsNullOrEmpty(DueDate) ? "无截止日期" : (IsOverdue ? "已逾期 · " : "截止 ") + DueDate; } }
+        public string EditLabel { get { return "编辑任务：" + Title; } }
         public string StateText { get { return Done ? "已完成" : "待完成"; } }
         public string ToggleText { get { return Done ? "恢复" : "完成"; } }
         public string ToggleLabel { get { return (Done ? "恢复任务：" : "完成任务：") + Title; } }
@@ -36,6 +46,25 @@ namespace LifeAssistant
                 Check(Native.sqlite3_busy_timeout(db, 2000));
                 Execute("PRAGMA synchronous=FULL;");
                 Execute("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL CHECK(length(trim(title))>0), done INTEGER NOT NULL DEFAULT 0 CHECK(done IN (0,1)), created_at TEXT NOT NULL);");
+                // 事务中升级旧版表结构，保留已有行和任务编号。
+                Execute("BEGIN IMMEDIATE;");
+                try
+                {
+                    var columns = new HashSet<string>();
+                    IntPtr schema = Prepare("PRAGMA table_info(tasks);");
+                    try
+                    {
+                        int schemaCode;
+                        while ((schemaCode = Native.sqlite3_step(schema)) == Row) columns.Add(ReadText(schema, 1));
+                        if (schemaCode != Finished) throw new IOException(Error());
+                    }
+                    finally { Native.sqlite3_finalize(schema); }
+                    if (!columns.Contains("category")) Execute("ALTER TABLE tasks ADD COLUMN category TEXT NOT NULL DEFAULT '生活';");
+                    if (!columns.Contains("priority")) Execute("ALTER TABLE tasks ADD COLUMN priority INTEGER NOT NULL DEFAULT 1 CHECK(priority BETWEEN 0 AND 2);");
+                    if (!columns.Contains("due_date")) Execute("ALTER TABLE tasks ADD COLUMN due_date TEXT NOT NULL DEFAULT '';");
+                    Execute("COMMIT;");
+                }
+                catch { Execute("ROLLBACK;"); throw; }
             }
             catch { Dispose(); throw; }
         }
@@ -43,26 +72,66 @@ namespace LifeAssistant
         public List<TodoTask> List()
         {
             var result = new List<TodoTask>();
-            IntPtr statement = Prepare("SELECT id,title,done,created_at FROM tasks ORDER BY done ASC,id DESC;");
+            IntPtr statement = Prepare("SELECT id,title,done,created_at,category,priority,due_date FROM tasks ORDER BY done ASC,priority DESC,CASE WHEN due_date='' THEN 1 ELSE 0 END,due_date ASC,id DESC;");
             try
             {
                 int code;
                 while ((code = Native.sqlite3_step(statement)) == Row)
-                    result.Add(new TodoTask { Id = Native.sqlite3_column_int64(statement, 0), Title = ReadText(statement, 1), Done = Native.sqlite3_column_int(statement, 2) == 1, CreatedAt = ReadText(statement, 3) });
+                    result.Add(new TodoTask { Id = Native.sqlite3_column_int64(statement, 0), Title = ReadText(statement, 1), Done = Native.sqlite3_column_int(statement, 2) == 1, CreatedAt = ReadText(statement, 3), Category = ReadText(statement, 4), Priority = Native.sqlite3_column_int(statement, 5), DueDate = ReadText(statement, 6) });
                 if (code != Finished) throw new IOException(Error());
             }
             finally { Native.sqlite3_finalize(statement); }
             return result;
         }
 
-        public void Add(string title)
+        public static readonly string[] Categories = { "生活", "学习", "工作", "其他" };
+
+        private static string Validate(string title, string category, int priority, string dueDate)
         {
             title = (title ?? "").Trim();
             if (title.Length == 0) throw new ArgumentException("请先输入任务标题，不能只输入空格。");
             if (title.Length > 120) throw new ArgumentException("任务标题最多 120 个字符。");
-            IntPtr statement = Prepare("INSERT INTO tasks(title,done,created_at) VALUES(?1,0,?2);");
-            try { BindText(statement, 1, title); BindText(statement, 2, DateTime.Now.ToString("yyyy-MM-dd HH:mm")); Commit(statement); }
+            if (!Categories.Contains(category)) throw new ArgumentException("请选择有效分类。");
+            if (priority < 0 || priority > 2) throw new ArgumentException("请选择有效优先级。");
+            DateTime parsed;
+            if (!String.IsNullOrEmpty(dueDate) && !DateTime.TryParseExact(dueDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed))
+                throw new ArgumentException("截止日期格式应为 yyyy-MM-dd，例如 2026-11-01。");
+            return title;
+        }
+
+        public void Add(string title) { Add(title, "生活", 1, ""); }
+
+        public void Add(string title, string category, int priority, string dueDate)
+        {
+            title = Validate(title, category, priority, dueDate);
+            IntPtr statement = Prepare("INSERT INTO tasks(title,done,created_at,category,priority,due_date) VALUES(?1,0,?2,?3,?4,?5);");
+            try
+            {
+                BindText(statement, 1, title); BindText(statement, 2, DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+                BindText(statement, 3, category); Check(Native.sqlite3_bind_int(statement, 4, priority)); BindText(statement, 5, dueDate ?? ""); Commit(statement);
+            }
             finally { Native.sqlite3_finalize(statement); }
+        }
+
+        public void Update(long id, string title, string category, int priority, string dueDate)
+        {
+            title = Validate(title, category, priority, dueDate);
+            IntPtr statement = Prepare("UPDATE tasks SET title=?1,category=?2,priority=?3,due_date=?4 WHERE id=?5;");
+            try
+            {
+                BindText(statement, 1, title); BindText(statement, 2, category); Check(Native.sqlite3_bind_int(statement, 3, priority));
+                BindText(statement, 4, dueDate ?? ""); Check(Native.sqlite3_bind_int64(statement, 5, id)); Commit(statement);
+            }
+            finally { Native.sqlite3_finalize(statement); }
+        }
+
+        // 查询条件可以组合使用，标题搜索不区分英文大小写。
+        public static List<TodoTask> Filter(IEnumerable<TodoTask> tasks, string state, string query, string category)
+        {
+            query = (query ?? "").Trim();
+            return tasks.Where(t => (state == "all" || (state == "done" ? t.Done : state == "overdue" ? t.IsOverdue : !t.Done))
+                && (String.IsNullOrEmpty(category) || t.Category == category)
+                && (query.Length == 0 || t.Title.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
         }
 
         public void SetDone(long id, bool done)
@@ -96,8 +165,8 @@ namespace LifeAssistant
         }
         private void BindText(IntPtr statement, int index, string value)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(value);
-            Check(Native.sqlite3_bind_text(statement, index, bytes, bytes.Length, Transient));
+            byte[] bytes = Utf8(value);
+            Check(Native.sqlite3_bind_text(statement, index, bytes, bytes.Length - 1, Transient));
         }
         private static byte[] Utf8(string value) { return Encoding.UTF8.GetBytes(value + "\0"); }
         private static string ReadText(IntPtr statement, int index)

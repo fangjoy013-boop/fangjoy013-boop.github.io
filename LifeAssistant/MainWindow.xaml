@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="拾光 · 个人生活助手" Width="1000" Height="740" MinWidth="780" MinHeight="600"
+        Title="拾光 · 个人生活助手" Width="1100" Height="800" MinWidth="940" MinHeight="700"
         WindowStartupLocation="CenterScreen" Background="#F5F6F8" FontFamily="Microsoft YaHei UI" FontSize="14"
         Foreground="#253747" UseLayoutRounding="True">
   <Window.Resources>
@@ -39,16 +39,20 @@
             <TextBlock x:Name="TaskTitle" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
               <Border x:Name="StateBadge" Background="#FFF1D6" CornerRadius="4" Padding="7,2"><TextBlock x:Name="StateLabel" Text="{Binding StateText}" Foreground="#9C6A16" FontSize="11"/></Border>
-              <TextBlock Text="{Binding CreatedAt}" Foreground="#7D8A96" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0"/>
+              <TextBlock Text="{Binding Category}" Foreground="#657D8A" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
+              <TextBlock Text="{Binding PriorityText}" Foreground="{Binding PriorityColor}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
+            <TextBlock x:Name="DueLabel" Text="{Binding DueText}" Foreground="#7D8A96" FontSize="11" Margin="0,7,0,0" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Content="编辑" Tag="edit" AutomationProperties.Name="{Binding EditLabel}" Padding="12,8" Margin="0,0,8,0"/>
             <Button Content="{Binding ToggleText}" Tag="toggle" AutomationProperties.Name="{Binding ToggleLabel}" Padding="15,8" Foreground="#13765F" Background="#F0F8F4" BorderBrush="#D9EBE2"/>
             <Button Content="删除" Tag="delete" AutomationProperties.Name="{Binding DeleteLabel}" Padding="12,8" Margin="8,0,0,0" Foreground="#9D5360" BorderBrush="#EFE3E5"/>
           </StackPanel>
         </Grid>
       </Border>
       <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding IsOverdue}" Value="True"><Setter TargetName="DueLabel" Property="Foreground" Value="#B64E45"/><Setter TargetName="DueLabel" Property="FontWeight" Value="SemiBold"/></DataTrigger>
         <DataTrigger Binding="{Binding Done}" Value="True">
           <Setter TargetName="TaskCard" Property="Background" Value="#F8FAF9"/>
           <Setter TargetName="TaskTitle" Property="Foreground" Value="#84928D"/>
@@ -60,7 +64,7 @@
     </DataTemplate>
   </Window.Resources>
   <Grid>
-    <Grid.ColumnDefinitions><ColumnDefinition Width="200"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+    <Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
     <Border Background="#173E39" Padding="23,30">
       <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <StackPanel>
@@ -76,29 +80,46 @@
     <Grid Grid.Column="1" Margin="30,28,30,20">
       <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <StackPanel><TextBlock Name="DateText" Foreground="#73818E" FontSize="12"/><TextBlock Text="把今天，安排得刚刚好" FontSize="25" FontWeight="Bold" Margin="0,8,0,7"/><TextBlock Text="记下想做的事，从一件小事开始。" Foreground="#74818D" FontSize="12"/></StackPanel>
-      <UniformGrid Grid.Row="1" Columns="3" Margin="0,24,0,22">
+      <UniformGrid Grid.Row="1" Columns="3" Margin="0,18,0,18">
         <Border Background="White" CornerRadius="11" Padding="17,13" Margin="0,0,10,0"><StackPanel><TextBlock Text="全部任务" Foreground="#7A8793" FontSize="11"/><TextBlock Name="TotalCount" Text="0" FontSize="27" FontWeight="SemiBold" Margin="0,4,0,0"/></StackPanel></Border>
         <Border Background="#FFF5E4" CornerRadius="11" Padding="17,13" Margin="0,0,10,0"><StackPanel><TextBlock Text="待完成" Foreground="#97723D" FontSize="11"/><TextBlock Name="PendingCount" Text="0" Foreground="#976A29" FontSize="27" FontWeight="SemiBold" Margin="0,4,0,0"/></StackPanel></Border>
         <Border Background="#E8F3EC" CornerRadius="11" Padding="17,13"><StackPanel><TextBlock Text="已完成" Foreground="#52816B" FontSize="11"/><TextBlock Name="DoneCount" Text="0" Foreground="#287052" FontSize="27" FontWeight="SemiBold" Margin="0,4,0,0"/></StackPanel></Border>
       </UniformGrid>
       <StackPanel Grid.Row="2">
-        <TextBlock Text="添加一件小事" FontWeight="SemiBold" Margin="0,0,0,10"/>
+        <TextBlock Name="FormTitle" Text="添加一件小事" FontWeight="SemiBold" Margin="0,0,0,10"/>
         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <Border Background="White" BorderBrush="#DCE5E4" BorderThickness="1" CornerRadius="9" Padding="12,0">
             <Grid><TextBox Name="TaskInput" MaxLength="120" FontSize="14" Background="Transparent" BorderThickness="0" Height="46" VerticalContentAlignment="Center" AutomationProperties.Name="任务标题"/>
               <TextBlock Name="InputHint" Text="例如：读 20 页书" Foreground="#9AA5AC" VerticalAlignment="Center" IsHitTestVisible="False"/></Grid>
           </Border>
-          <Button Name="AddButton" Grid.Column="1" Content="＋ 添加任务" Background="#217A61" Foreground="White" BorderBrush="#217A61" Margin="10,0,0,0" Padding="18,10" IsDefault="True"/>
+          <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <Button Name="AddButton" Content="＋ 添加任务" Background="#217A61" Foreground="White" BorderBrush="#217A61" Margin="10,0,0,0" Padding="18,10"/>
+            <Button Name="CancelEditButton" Content="取消" Margin="8,0,0,0" Padding="12,10" Visibility="Collapsed"/>
+          </StackPanel>
         </Grid>
-        <TextBlock Name="Feedback" Text="输入标题后按 Enter，即可添加。最多 120 个字符。" Foreground="#75858D" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+        <Grid Margin="0,10,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="1.6*"/></Grid.ColumnDefinitions>
+          <StackPanel Margin="0,0,12,0"><TextBlock Text="分类" FontSize="11" Foreground="#75858D" Margin="0,0,0,4"/><ComboBox Name="CategoryInput" Height="30" VerticalContentAlignment="Center" AutomationProperties.Name="任务分类"/></StackPanel>
+          <StackPanel Grid.Column="1" Margin="0,0,12,0"><TextBlock Text="优先级" FontSize="11" Foreground="#75858D" Margin="0,0,0,4"/><ComboBox Name="PriorityInput" Height="30" VerticalContentAlignment="Center" AutomationProperties.Name="任务优先级"/></StackPanel>
+          <StackPanel Grid.Column="2"><TextBlock Text="截止日期（年-月-日，可留空）" FontSize="11" Foreground="#75858D" Margin="0,0,0,4"/><TextBox Name="DueInput" Height="30" Padding="8,3" MaxLength="10" BorderBrush="#DCE5E4" ToolTip="例如 2026-11-01；留空表示无截止日期" AutomationProperties.Name="截止日期"/></StackPanel>
+        </Grid>
+        <TextBlock Name="Feedback" Text="标题最多 120 字符；在标题输入框按 Enter 保存。" Foreground="#75858D" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
       </StackPanel>
-      <Grid Grid.Row="3" Margin="0,22,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <Grid Grid.Row="3" Margin="0,16,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal">
           <RadioButton Name="FilterAll" Content="全部" GroupName="Filter" IsChecked="True" Style="{StaticResource FilterStyle}"/>
           <RadioButton Name="FilterPending" Content="待完成" GroupName="Filter" Style="{StaticResource FilterStyle}"/>
           <RadioButton Name="FilterDone" Content="已完成" GroupName="Filter" Style="{StaticResource FilterStyle}"/>
+          <RadioButton Name="FilterOverdue" Content="已逾期" GroupName="Filter" Style="{StaticResource FilterStyle}"/>
         </StackPanel>
-        <TextBlock Grid.Column="1" Text="未完成优先" Foreground="#8B969E" FontSize="11" VerticalAlignment="Center"/>
+        <TextBlock Name="ResultCount" Grid.Column="1" Foreground="#8B969E" FontSize="11" VerticalAlignment="Center"/>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <Border Background="White" BorderBrush="#DCE5E4" BorderThickness="1" CornerRadius="7" Padding="10,0" Margin="0,0,10,0"><Grid>
+            <TextBox Name="SearchInput" Background="Transparent" BorderThickness="0" Height="32" VerticalContentAlignment="Center" AutomationProperties.Name="搜索任务"/>
+            <TextBlock Name="SearchHint" Text="搜索任务标题…" Foreground="#9AA5AC" VerticalAlignment="Center" IsHitTestVisible="False"/>
+          </Grid></Border>
+          <ComboBox Name="CategoryFilter" Grid.Column="1" Height="34" VerticalContentAlignment="Center" AutomationProperties.Name="分类筛选"/>
+          <Button Name="ClearFiltersButton" Grid.Column="2" Content="重置筛选" Padding="12,6" Margin="10,0,0,0"/>
+        </Grid>
       </Grid>
       <Grid Grid.Row="4">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0"><ItemsControl Name="TaskList" ItemTemplate="{StaticResource TaskTemplate}"/></ScrollViewer>
