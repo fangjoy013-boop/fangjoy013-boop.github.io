@@ -1,0 +1,14 @@
+# Local task data
+/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Machine-specific shortcuts and build/editor caches
+*.lnk
+*.pdb
+/bin/
+/obj/
+/.vs/
+*.user
